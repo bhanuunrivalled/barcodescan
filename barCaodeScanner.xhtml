@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+        xmlns:ui="http://java.sun.com/jsf/facelets"
+        xmlns:h="http://java.sun.com/jsf/html"
+        xmlns:f="http://java.sun.com/jsf/core"
+        xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <title>Baar Code</title>
+</h:head>
+
+<h:body>
+    <h:form id="scanner">
+        <div id="top">
+            <h1>QR / Barcode Reader</h1>
+        </div>
+
+        <div>
+            <h:panelGrid columns="2">
+                <p:commandButton value="start" id="startButton"/>
+                <p:commandButton value="reset" id="resetButton"/>
+                <p:row >
+                    <p:column colspan="3">
+                        <video id="video" crossorigin="anonymous" width="300" height="200" style="border: 1px solid gray"></video>
+                    </p:column>
+                </p:row>
+            </h:panelGrid>
+        </div>
+
+        <div id="sourceSelectPanel" style="display:none">
+            <label for="sourceSelect">Change video source:</label>
+            <select id="sourceSelect" style="max-width:400px">
+            </select>
+        </div>
+
+        <label>Result:</label>
+        <pre><code id="result"></code></pre>
+
+    </h:form>
+
+    <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
+    <script type="text/javascript">
+        window.addEventListener('load', function () {
+            let selectedDeviceId;
+            const codeReader = new ZXing.BrowserMultiFormatReader()
+            console.log('ZXing code reader initialized')
+            codeReader.getVideoInputDevices()
+                .then((videoInputDevices) => {
+                    const sourceSelect = document.getElementById('sourceSelect')
+                    selectedDeviceId = videoInputDevices[0].deviceId
+                    if (videoInputDevices.length >= 1) {
+                        videoInputDevices.forEach((element) => {
+                            const sourceOption = document.createElement('option')
+                            sourceOption.text = element.label
+                            sourceOption.value = element.deviceId
+                            sourceSelect.appendChild(sourceOption)
+                        })
+
+                        sourceSelect.onchange = () => {
+                            selectedDeviceId = sourceSelect.value;
+                        };
+
+                        const sourceSelectPanel = document.getElementById('sourceSelectPanel')
+                        sourceSelectPanel.style.display = 'block'
+                    }
+
+                    document.getElementById('scanner:startButton').addEventListener('click', () => {
+                        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                            if (result) {
+                                console.log(result)
+                                document.getElementById('result').textContent = result.text
+                            }
+                            console.log(" result not found ")
+                        })
+                        console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
+                    })
+
+                    document.getElementById('scanner:resetButton').addEventListener('click', () => {
+                        codeReader.reset()
+                        document.getElementById('result').textContent = '';
+                        console.log('Reset.')
+                    })
+                })
+                .catch((err) => {
+                    console.error(err)
+                })
+        })
+    </script>
+
+
+</h:body>
+
+</html>
